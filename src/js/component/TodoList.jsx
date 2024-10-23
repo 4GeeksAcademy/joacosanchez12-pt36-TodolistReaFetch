@@ -2,26 +2,38 @@ import React, { useState, useEffect } from "react";
 
 //create your first component
 const TodoList = () => {
-  const [todos, setTodos] = useState([
-    { label: "Make the bed", done: false },
-    { label: "Wash the cars", done: false },
-    { label: "Feed the dogs", done: false },
-    { label: "Take my dog to get a grooming", done: false },
-  ]);
+  const [todos, setTodos] = useState([]);
   const [newTodo, setNewTodo] = useState("");
   const API_URL = "https://playground.4geeks.com/todo/users/Joaquin95";
 
-  
-
   useEffect(() => {
-
     const fetchTodos = async () => {
-      let response = await fetch("https://playground.4geeks.com/todo/users/Joaquin95");
-      let data = await response.json();
-      console.log("Fetched data:", data);
+      try {
+        let response = await fetch(API_URL);
+        if (!response.ok) throw new Error("User does not exist");
 
-      if (Array.isArray(data)) {
-        setTodos(data);
+        let data = await response.json();
+        console.log("Fetched data:", data);
+
+        if (Array.isArray(data)) {
+          setTodos(data);
+        }
+      } catch (error) {
+        console.error("Error fetching todos:", error);
+        
+        const defaultTodos = [
+          { label: "Make the bed", done: false },
+          { label: "Wash the cars", done: false },
+          { label: "Feed the dogs", done: false },
+          { label: "Take my dog to get a grooming", done: false },
+        ];
+        await fetch(API_URL, {
+          method: "POST",
+          body: JSON.stringify(defaultTodos),
+          headers: { "Content-Type": "application/json" },
+        });
+        
+        fetchTodos();
       }
     };
 
@@ -31,33 +43,33 @@ const TodoList = () => {
   const addTodo = async (e) => {
     e.preventDefault();
     if (newTodo.trim() !== "") {
-      let updatedTodos = [...todos, { label: newTodo, done: false }];
+      const updatedTodos = [...todos, { label: newTodo, done: false }];
       setTodos(updatedTodos);
       setNewTodo("");
 
-      await fetch("https://playground.4geeks.com/todo/users/Joaquin95", {
-        method: "PUT",
-        body: JSON.stringify(updatedTodos),
-        headers: { "Content-Type": "application/json" },
-      });
+      await updateTodos(updatedTodos);
     }
   };
 
   const removeTodo = async (index) => {
-    let updatedTodos = todos.filter((_, i) => i !== index);
+    const updatedTodos = todos.filter((_, i) => i !== index);
     setTodos(updatedTodos);
 
-    await fetch("https://playground.4geeks.com/todo/users/Joaquin95", {
-      method: "PUT",
-      body: JSON.stringify(updatedTodos),
-      headers: { "Content-Type": "application/json" },
-    });
+    await updateTodos(updatedTodos);
   };
 
   const clearTodos = async () => {
     setTodos([]);
-    await fetch("https://playground.4geeks.com/todo/users/Joaquin95", {
+    await fetch(API_URL, {
       method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+    });
+  };
+
+  const updateTodos = async (updatedTodos) => {
+    await fetch(API_URL, {
+      method: "PUT",
+      body: JSON.stringify(updatedTodos),
       headers: { "Content-Type": "application/json" },
     });
   };
@@ -91,4 +103,5 @@ const TodoList = () => {
     </div>
   );
 };
+
 export default TodoList;
